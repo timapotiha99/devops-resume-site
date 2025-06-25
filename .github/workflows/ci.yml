@@ -8,7 +8,6 @@ jobs:
   build:
     name: 🧪 Run Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -26,12 +25,45 @@ jobs:
       - name: Run pytest
         run: pytest
 
-  deploy:
-    name: 🚀 Deploy to Server
+  debug-ssh:
+    name: 🔍 Debug SSH Connectivity
+    runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
+      - name: Show secrets
+        run: |
+          echo "SERVER_USER=${{ secrets.SERVER_USER }}"
+          echo "SERVER_IP=${{ secrets.SERVER_IP }}"
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Dump SSH key head & length
+        env:
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          echo "$SSH_KEY" | wc -l
+          echo "$SSH_KEY" | head -n3
+
+      - name: Write key and test plain SSH
+        env:
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          printf '%s\n' "$SSH_KEY" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} 'echo SSH_OK'
+
+  deploy:
+    name: 🚀 Deploy to Server
+    runs-on: ubuntu-latest
+    needs: [build, debug-ssh]
+    if: needs.debug-ssh.outputs['__'] == ''  # зав’язати на успіх debug, но просто let-it-go
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
