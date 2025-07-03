@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: 🧪 Run Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -26,7 +26,7 @@ jobs:
         run: pytest
 
   debug-ssh:
-    name: 🔍 Debug SSH Connectivity
+    name: Debug SSH Connectivity
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -72,7 +72,7 @@ jobs:
           ssh -vvv -i key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} echo SSH_OK
 
   deploy:
-    name: 🚀 Deploy to Server
+    name: Deploy to Server
     runs-on: ubuntu-latest
     needs: [build, debug-ssh]
     if: github.ref == 'refs/heads/main'
